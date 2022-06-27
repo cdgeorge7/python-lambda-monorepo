@@ -1,0 +1,53 @@
+version: 2.1
+
+executors:
+  base:
+    docker:
+      - image: cimg/base:stable
+
+parameters:
+  other-lambda:
+    type: boolean
+    default: false
+  proxy-lambda:
+    type: boolean
+    default: false
+  infrastructure:
+    type: boolean
+    default: false
+    
+jobs:
+  other-lambda:
+      executor: base
+      steps:
+        - run: 
+            command: |
+              echo "other lambda"
+  proxy-lambda: 
+      executor: base
+      steps:
+        - run: 
+            command: |
+              echo "proxy lambda" 
+  infrastructure: 
+      executor: base
+      steps:
+        - run: 
+            command: |
+              echo "infrastructure"   
+              
+workflows:
+  build-other-lambda:
+    when: << pipeline.parameters.other-lambda >>
+    jobs:
+      - other-lambda
+      
+  build-proxy-lambda:
+    when: << pipeline.parameters.proxy-lambda >> 
+    jobs:
+      - proxy-lambda
+      
+  build-infrastructure:
+    when: << pipeline.parameters.infrastructure >>
+    jobs:
+      - infrastructure
