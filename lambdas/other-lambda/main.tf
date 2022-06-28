@@ -15,6 +15,10 @@ terraform {
   }
 }
 
+provider "aws" {
+  region = "us-east-1"
+}
+
 module "lambda" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "3.3.1"
