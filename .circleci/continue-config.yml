@@ -25,10 +25,11 @@ jobs:
       - run:
           name: test lambda
           command: |
-            python3 -m venv venv
+            cd lambdas/other-lambda
+            python -m venv venv
             . venv/bin/activate
             pip install -r requirements.txt
-            python3 -m unittest
+            python -m unittest
   proxy-lambda: 
       executor: base
       steps:
