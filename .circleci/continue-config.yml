@@ -55,7 +55,7 @@ jobs:
           name: terraform apply
           command: |
             cd lambdas/other-lambda
-            terraform apply tfplan -auto-approve
+            terraform apply tfplan
 
   proxy-lambda: 
       executor: base
