@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  terraform: circleci/terraform@3.1.0
+
 executors:
   base:
     docker:
@@ -17,7 +20,20 @@ parameters:
     default: false
     
 jobs:
-  other-lambda:
+  build-other-lambda:
+    docker:
+      - image: circleci/python:3.9
+    steps:
+      - checkout
+      - run:
+          name: test lambda
+          command: |
+            cd lambdas/other-lambda
+            python -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+            python -m unittest
+  deploy-other-lambda-staging:
     docker:
       - image: circleci/python:3.9
     steps:
@@ -44,17 +60,41 @@ jobs:
               echo "infrastructure"   
               
 workflows:
-  build-other-lambda:
+  build-deploy-other-lambda:
     when: << pipeline.parameters.other-lambda >>
     jobs:
-      - other-lambda
+      - build-other-lambda
+      - terraform/fmt:
+          checkout: true
+          context: terraform
+          requires:
+            - build-other-lambda
+      - terraform/validate:
+          checkout: true
+          context: terraform
+          requires:
+            - terraform/fmt
+      - terraform/plan:
+          checkout: true
+          context: terraform
+          requires:
+            - terraform/validate
+      - terraform/apply:
+          checkout: true
+          context: terraform
+          filters:
+            branches:
+              only: 
+                - staging
+          requires:
+            - terraform/plan
       
-  build-proxy-lambda:
+  build-deploy-proxy-lambda:
     when: << pipeline.parameters.proxy-lambda >> 
     jobs:
       - proxy-lambda
       
-  build-infrastructure:
+  deploy-infrastructure:
     when: << pipeline.parameters.infrastructure >>
     jobs:
       - infrastructure
