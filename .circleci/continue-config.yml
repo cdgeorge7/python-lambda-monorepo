@@ -33,19 +33,22 @@ jobs:
             . venv/bin/activate
             pip install -r requirements.txt
             python -m unittest
-  deploy-other-lambda-staging:
+  deploy-other-lambda:
+    working_directory: /tmp/project
     docker:
-      - image: circleci/python:3.9
+      - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
     steps:
       - checkout
       - run:
-          name: test lambda
+          name: terraform init & plan
           command: |
             cd lambdas/other-lambda
-            python -m venv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
-            python -m unittest
+            terraform init
+            terraform plan -out=tfplan
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
   proxy-lambda: 
       executor: base
       steps:
@@ -64,30 +67,9 @@ workflows:
     when: << pipeline.parameters.other-lambda >>
     jobs:
       - build-other-lambda
-      - terraform/fmt:
-          checkout: true
-          context: terraform
+      - deploy-other-lambda-staging
           requires:
             - build-other-lambda
-      - terraform/validate:
-          checkout: true
-          context: terraform
-          requires:
-            - terraform/fmt
-      - terraform/plan:
-          checkout: true
-          context: terraform
-          requires:
-            - terraform/validate
-      - terraform/apply:
-          checkout: true
-          context: terraform
-          filters:
-            branches:
-              only: 
-                - staging
-          requires:
-            - terraform/plan
       
   build-deploy-proxy-lambda:
     when: << pipeline.parameters.proxy-lambda >> 
