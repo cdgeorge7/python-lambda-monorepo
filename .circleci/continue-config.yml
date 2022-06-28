@@ -17,7 +17,7 @@ parameters:
     default: false
     
 jobs:
-  build:
+  other-lambda:
     docker:
       - image: circleci/python:3.9
     steps:
@@ -29,13 +29,6 @@ jobs:
             . venv/bin/activate
             pip install -r requirements.txt
             python3 -m unittest
-
-  other-lambda:
-      executor: base
-      steps:
-        - run: 
-            command: |
-              echo "other lambda"
   proxy-lambda: 
       executor: base
       steps:
