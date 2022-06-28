@@ -36,10 +36,13 @@ jobs:
   deploy-other-lambda:
     working_directory: /tmp/project
     docker:
-      - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
       - image: circleci/python:3.7
     steps:
       - checkout
+      - run:
+          name: install deps
+          command: |
+            
       - run:
           name: terraform init & plan
           command: |
