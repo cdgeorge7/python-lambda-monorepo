@@ -17,6 +17,18 @@ parameters:
     default: false
     
 jobs:
+  build:
+    docker:
+      - image: circleci/python:3.9
+    steps:
+      - run:
+          name: test lambda
+          command: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+          python -m unittest
+
   other-lambda:
       executor: base
       steps:
@@ -40,11 +52,13 @@ workflows:
   build-other-lambda:
     when: << pipeline.parameters.other-lambda >>
     jobs:
+      - build
       - other-lambda
       
   build-proxy-lambda:
     when: << pipeline.parameters.proxy-lambda >> 
     jobs:
+      - build
       - proxy-lambda
       
   build-infrastructure:
