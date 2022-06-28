@@ -7,6 +7,12 @@ terraform {
     dynamodb_table = "terraform-state-example-locks"
     encrypt        = true
   }
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 4.12.0"
+    }
+  }
 }
 
 module "lambda" {
