@@ -18,11 +18,18 @@ parameters:
     
 jobs:
   other-lambda:
-      executor: base
-      steps:
-        - run: 
-            command: |
-              echo "other lambda"
+    docker:
+      - image: circleci/python:3.9
+    steps:
+      - checkout
+      - run:
+          name: test lambda
+          command: |
+            cd lambdas/other-lambda
+            python -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+            python -m unittest
   proxy-lambda: 
       executor: base
       steps:
