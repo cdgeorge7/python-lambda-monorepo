@@ -51,10 +51,12 @@ jobs:
             cd lambdas/other-lambda
             terraform init -backend-config="access_key=${AWS_ACCESS_KEY_ID}" -backend-config="secret_key=${AWS_SECRET_ACCESS_KEY}"
             terraform plan -out=tfplan
-      - persist_to_workspace:
-          root: .
-          paths:
-            - .
+      - run:
+          name: terraform apply
+          command: |
+            cd lambdas/other-lambda
+            terraform apply tfplan -auto-approve
+
   proxy-lambda: 
       executor: base
       steps:
