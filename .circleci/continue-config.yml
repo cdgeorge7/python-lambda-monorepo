@@ -15,7 +15,13 @@ parameters:
   proxy-lambda:
     type: boolean
     default: false
-  infrastructure:
+  infrastructure-dev:
+    type: boolean
+    default: false
+  infrastructure-staging:
+    type: boolean
+    default: false
+  infrastructure-production:
     type: boolean
     default: false
     
