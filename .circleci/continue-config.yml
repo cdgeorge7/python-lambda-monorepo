@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  aws-cli: circleci/aws-cli@2.0.3
+
 executors:
   base:
     docker:
@@ -17,7 +20,7 @@ parameters:
     default: false
     
 jobs:
-  other-lambda:
+  build-other-lambda:
     docker:
       - image: circleci/python:3.9
     steps:
@@ -30,6 +33,28 @@ jobs:
             . venv/bin/activate
             pip install -r requirements.txt
             python -m unittest
+  deploy-other-lambda:
+    docker:
+      - image: circleci/python:3.9
+    steps:
+      - checkout
+      - run:
+          name: install terraform
+          command: |
+            sudo apt-get update && sudo apt-get install -y gnupg software-properties-common curl
+            curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+            sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+            sudo apt-get update && sudo apt-get install terraform
+      - run:
+          name: terraform init & plan
+          command: |
+            cd lambdas/other-lambda
+            terraform init -backend-config="access_key=${AWS_ACCESS_KEY_ID}" -backend-config="secret_key=${AWS_SECRET_ACCESS_KEY}"
+            terraform plan -out=tfplan
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
   proxy-lambda: 
       executor: base
       steps:
@@ -44,17 +69,20 @@ jobs:
               echo "infrastructure"   
               
 workflows:
-  build-other-lambda:
+  build-deploy-other-lambda:
     when: << pipeline.parameters.other-lambda >>
     jobs:
-      - other-lambda
+      - build-other-lambda
+      - deploy-other-lambda:
+          requires: 
+            - build-other-lambda
       
-  build-proxy-lambda:
+  build-deploy-proxy-lambda:
     when: << pipeline.parameters.proxy-lambda >> 
     jobs:
       - proxy-lambda
       
-  build-infrastructure:
+  deploy-infrastructure:
     when: << pipeline.parameters.infrastructure >>
     jobs:
       - infrastructure
