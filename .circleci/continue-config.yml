@@ -46,13 +46,11 @@ workflows:
   build-other-lambda:
     when: << pipeline.parameters.other-lambda >>
     jobs:
-      - build
       - other-lambda
       
   build-proxy-lambda:
     when: << pipeline.parameters.proxy-lambda >> 
     jobs:
-      - build
       - proxy-lambda
       
   build-infrastructure:
