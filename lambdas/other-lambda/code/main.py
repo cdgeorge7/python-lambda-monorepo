@@ -1,2 +1,2 @@
 def handler(event, context=None):
-    return {"statusCode": 200, "body": "Hello World Star!!!"}
+    return {"statusCode": 200, "body": "Hello my friend!"}

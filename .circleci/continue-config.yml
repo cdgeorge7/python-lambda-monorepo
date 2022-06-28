@@ -78,6 +78,10 @@ workflows:
       - deploy-other-lambda:
           requires: 
             - build-other-lambda
+          filters:
+            branches:
+              only:
+                - staging
       
   build-deploy-proxy-lambda:
     when: << pipeline.parameters.proxy-lambda >> 
