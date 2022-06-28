@@ -67,8 +67,9 @@ workflows:
     when: << pipeline.parameters.other-lambda >>
     jobs:
       - build-other-lambda
-      - deploy-other-lambda-staging
-          requires: build-other-lambda
+      - deploy-other-lambda-staging:
+          requires: 
+            - build-other-lambda
       
   build-deploy-proxy-lambda:
     when: << pipeline.parameters.proxy-lambda >> 
