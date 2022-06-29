@@ -122,7 +122,7 @@ workflows:
   deploy-infrastructure-staging:
     when: << pipeline.parameters.infrastructure-staging >>
     jobs:
-      - infrastructure-staging
+      - infrastructure-staging:
           filters:
             branches:
               only:
@@ -131,7 +131,7 @@ workflows:
   deploy-infrastructure-production:
     when: << pipeline.parameters.infrastructure-production >>
     jobs:
-      - infrastructure-production
+      - infrastructure-production:
           filters:
             branches:
               only:
