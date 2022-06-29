@@ -103,12 +103,36 @@ jobs:
               
 workflows:
   build-deploy-other-lambda:
-    when: << pipeline.parameters.other-lambda >>
+    when: 
+      and: 
+        - << pipeline.parameters.other-lambda >>
+        - not: << pipeline.paramers.infrastructure-staging >>
     jobs:
       - build-other-lambda
       - deploy-other-lambda-staging:
           requires: 
             - build-other-lambda
+          filters:
+            branches:
+              only:
+                - staging
+  build-deploy-other-lambda-with-infra:
+    when: 
+      and: 
+        - << pipeline.parameters.other-lambda >>
+        - << pipeline.paramers.infrastructure-staging >>
+    jobs:
+      - build-other-lambda
+      - deploy-other-lambda-staging:
+          requires: 
+            - build-other-lambda
+          filters:
+            branches:
+              only:
+                - staging
+      - infrastructure-staging:
+          requires: 
+            - deploy-other-lambda-staging
           filters:
             branches:
               only:
@@ -120,7 +144,11 @@ workflows:
       - proxy-lambda
 
   deploy-infrastructure-staging:
-    when: << pipeline.parameters.infrastructure-staging >>
+    when: 
+      and:
+        - << pipeline.parameters.infrastructure-staging >>
+        - not: << pipeline.parameters.other-lambda >>
+        - not: << pipeline.parameters.proxy-lambda >>
     jobs:
       - infrastructure-staging:
           filters:
