@@ -29,7 +29,7 @@ module "lambda" {
   runtime       = "python3.9"
   publish       = true
 
-  source_path = "./code"
+  source_path = "../../code"
 
   store_on_s3 = true
   s3_bucket   = "lambda-source-bucket-lskjadf"
