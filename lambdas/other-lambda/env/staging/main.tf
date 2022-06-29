@@ -20,7 +20,7 @@ provider "aws" {
 }
 
 variable "environment" {
-  default = "staging"
+  default = "-staging"
 }
 
 module "lambda" {
