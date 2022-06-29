@@ -23,6 +23,7 @@ variable "environment" {
   default = "-staging"
 }
 
+# trigger deploy...dumb
 module "lambda" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "3.3.1"
