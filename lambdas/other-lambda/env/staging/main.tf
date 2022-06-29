@@ -19,6 +19,10 @@ provider "aws" {
   region = "us-east-1"
 }
 
+variable "environment" {
+  default = "staging"
+}
+
 module "lambda" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "3.3.1"
@@ -32,7 +36,7 @@ module "lambda" {
   source_path = "../../code"
 
   store_on_s3 = true
-  s3_bucket   = "lambda-source-bucket-lskjadf"
+  s3_bucket   = "lambda-source-bucket${var.environment}-lskjadf"
 }
 
 output "s3_object" {

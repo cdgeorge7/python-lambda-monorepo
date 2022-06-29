@@ -22,3 +22,14 @@ resource "aws_dynamodb_table" "terraform_locks" {
     type = "S"
   }
 }
+
+resource "aws_s3_bucket" "lambda-source-bucket" {
+  bucket = "lambda-source-bucket-staging-lskjadf"
+}
+
+resource "aws_s3_bucket_versioning" "lambda-source-bucket-versioning" {
+  bucket = aws_s3_bucket.terraform_state.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
