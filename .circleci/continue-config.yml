@@ -106,7 +106,7 @@ workflows:
     when: 
       and: 
         - << pipeline.parameters.other-lambda >>
-        - not: << pipeline.paramers.infrastructure-staging >>
+        - not: << pipeline.parameters.infrastructure-staging >>
     jobs:
       - build-other-lambda
       - deploy-other-lambda-staging:
@@ -120,7 +120,7 @@ workflows:
     when: 
       and: 
         - << pipeline.parameters.other-lambda >>
-        - << pipeline.paramers.infrastructure-staging >>
+        - << pipeline.parameters.infrastructure-staging >>
     jobs:
       - build-other-lambda
       - deploy-other-lambda-staging:
