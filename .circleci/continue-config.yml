@@ -123,8 +123,16 @@ workflows:
     when: << pipeline.parameters.infrastructure-staging >>
     jobs:
       - infrastructure-staging
+          filters:
+            branches:
+              only:
+                - staging
 
   deploy-infrastructure-production:
     when: << pipeline.parameters.infrastructure-production >>
     jobs:
       - infrastructure-production
+          filters:
+            branches:
+              only:
+                - main
