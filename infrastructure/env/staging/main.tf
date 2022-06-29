@@ -15,6 +15,10 @@ terraform {
   }
 }
 
+provider "aws" {
+  region = "us-east-1"
+}
+
 #trigger deploy
 module "use_other_lambda" {
   source = "../../modules/use_other_lambda"
