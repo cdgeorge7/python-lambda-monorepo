@@ -12,8 +12,8 @@ workflows:
           base-revision: staging
           config-path: .circleci/continue-config.yml
           mapping: |
-            lambdas/other-lambda/.* other-lambda true deploy-string other-lambda-src
-            lambdas/proxy-lambda/.* proxy-lambda true deploy-string proxy-lambda-src
-            infrastructure/env/dev/.* infrastructure-dev true deploy-string infra-dev
-            infrastructure/env/staging/.* infrastructure-staging true deploy-string infra-staging
-            infrastructure/env/production/.* infrastructure-production true deploy-string infra-production
+            lambdas/other-lambda/.* other-lambda true, deploy-string other-lambda-src
+            lambdas/proxy-lambda/.* proxy-lambda true, deploy-string proxy-lambda-src
+            infrastructure/env/dev/.* infrastructure-dev true, deploy-string infra-dev
+            infrastructure/env/staging/.* infrastructure-staging true, deploy-string infra-staging
+            infrastructure/env/production/.* infrastructure-production true, deploy-string infra-production
