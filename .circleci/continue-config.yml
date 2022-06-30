@@ -143,7 +143,6 @@ workflows:
         - not: << pipeline.parameters.infrastructure-staging >>
     jobs:
       - unit-test-lambda:
-          name: test other-lambda
           lambda_name: other-lambda
       - tf-init-and-plan-lambda-staging:
           name: init & plan other-lambda
