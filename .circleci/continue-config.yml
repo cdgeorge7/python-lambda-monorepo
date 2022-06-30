@@ -145,12 +145,10 @@ workflows:
       - unit-test-lambda:
           lambda_name: other-lambda
       - tf-init-and-plan-lambda-staging:
-          name: init & plan other-lambda
           lambda_name: other-lambda
           requires:
             - unit-test-lambda
       - tf-deploy-lambda-staging:
-          name: deploy other-lambda staging
           lambda_name: other-lambda
           requires:
             - tf-init-and-plan-lambda-staging
