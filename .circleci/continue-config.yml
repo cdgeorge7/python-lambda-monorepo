@@ -183,26 +183,6 @@ workflows:
               only:
                 - staging
 
-
-
-  lambda-only:
-    when:
-      and:
-        - or: [ << pipeline.parameters.other-lambda >>, << pipeline.parameters.proxy-lambda >> ]
-        - not: << pipeline.parameters.infrastructure-staging >>
-    jobs:
-      - unit-test-lambda
-      - tf-init-and-plan-lambda-staging:
-          requires:
-            - unit-test-lambda
-      - tf-deploy-lambda-staging:
-          requires:
-            - tf-init-and-plan-lambda-staging
-          filters:
-            branches:
-              only:
-                - staging
-
   deploy-infrastructure-staging:
     when: 
       and:
