@@ -152,6 +152,7 @@ workflows:
             - unit-test-lambda
       - tf-deploy-lambda-staging:
           name: deploy other-lambda staging
+          lambda_name: other-lambda
           requires:
             - tf-init-and-plan-lambda-staging
           filters:
