@@ -24,25 +24,104 @@ parameters:
   infrastructure-production:
     type: boolean
     default: false
-  deploy-string:
-    type: string
-    default: ""
     
 jobs:
-  build-other-lambda:
+  unit-test-lambda:
     docker:
       - image: circleci/python:3.9
     steps:
       - checkout
       - run:
-          name: test lambda
+          when: << pipeline.parameters.other-lambda >>
+          name: test other-lambda
           command: |
             cd lambdas/other-lambda
-            echo << pipeline.parameters.deploy-string >>
             python -m venv venv
             . venv/bin/activate
             pip install -r requirements.txt
             python -m unittest
+      - run:
+          when: << pipeline.parameters.proxy-lambda >>
+          name: test proxy-lambda
+          command: |
+            cd lambdas/proxy-lambda
+            python -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+            python -m unittest
+
+  tf-init-and-plan-lambda-staging:
+    docker:
+      - image: circleci/python:3.9
+    steps:
+      - checkout
+      - run:
+          name: install terraform
+          command: |
+            sudo apt-get update && sudo apt-get install -y gnupg software-properties-common curl
+            curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+            sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+            sudo apt-get update && sudo apt-get install terraform
+      - run:
+          when: << pipeline.parameters.other-lambda >>
+          name: terraform init & plan other-lambda
+          command: |
+            cd lambdas/other-lambda/env/staging
+            export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
+            terraform init -backend-config="access_key=${AWS_ACCESS_KEY_ID}" -backend-config="secret_key=${AWS_SECRET_ACCESS_KEY}"
+            terraform plan -out=tfplan
+      - run:
+          when: << pipeline.parameters.proxy-lambda >>
+          name: terraform init & plan proxy-lambda
+          command: |
+            cd lambdas/proxy-lambda/env/staging
+            export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
+            terraform init -backend-config="access_key=${AWS_ACCESS_KEY_ID}" -backend-config="secret_key=${AWS_SECRET_ACCESS_KEY}"
+            terraform plan -out=tfplan
+
+  tf-deploy-lambda-staging:
+    docker:
+      - image: circleci/python:3.9
+    steps:
+      - checkout
+      - run:
+          name: install terraform
+          command: |
+            sudo apt-get update && sudo apt-get install -y gnupg software-properties-common curl
+            curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+            sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+            sudo apt-get update && sudo apt-get install terraform
+      - run:
+          when: << pipeline.parameters.other-lambda >>
+          name: terraform init & plan other-lambda
+          command: |
+            cd lambdas/other-lambda/env/staging
+            export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
+            terraform init -backend-config="access_key=${AWS_ACCESS_KEY_ID}" -backend-config="secret_key=${AWS_SECRET_ACCESS_KEY}"
+            terraform plan -out=tfplan
+      - run:
+          when: << pipeline.parameters.proxy-lambda >>
+          name: terraform init & plan proxy-lambda
+          command: |
+            cd lambdas/proxy-lambda/env/staging
+            export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
+            terraform init -backend-config="access_key=${AWS_ACCESS_KEY_ID}" -backend-config="secret_key=${AWS_SECRET_ACCESS_KEY}"
+            terraform plan -out=tfplan
+      - run:
+          when: << pipeline.parameters.other-lambda >>
+          name: terraform apply other-lambda
+          command: |
+            cd lambdas/other-lambda/env/staging
+            export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
+            terraform apply tfplan
+      - run:
+          when: << pipeline.parameters.proxy-lambda >>
+          name: terraform apply proxy-lambda
+          command: |
+            cd lambdas/proxy-lambda/env/staging
+            export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
+            terraform apply tfplan
+
   deploy-other-lambda-staging:
     docker:
       - image: circleci/python:3.9
@@ -113,20 +192,24 @@ jobs:
               echo "infrastructure"
               
 workflows:
-  build-deploy-other-lambda:
-    when: 
-      and: 
-        - << pipeline.parameters.other-lambda >>
+  lambda-only:
+    when:
+      and:
+        - or: [ << pipeline.parameters.other-lambda >>, << pipeline.parameters.proxy-lambda >> ]
         - not: << pipeline.parameters.infrastructure-staging >>
     jobs:
-      - build-other-lambda
-      - deploy-other-lambda-staging:
-          requires: 
-            - build-other-lambda
+      - unit-test-lambda
+      - tf-init-and-plan-lambda-staging:
+          requires:
+            - unit-test-lambda
+      - tf-deploy-lambda-staging:
+          requires:
+            - tf-init-and-plan-lambda-staging
           filters:
             branches:
               only:
                 - staging
+
   build-deploy-other-lambda-with-infra:
     when: 
       and: 
@@ -148,11 +231,6 @@ workflows:
             branches:
               only:
                 - staging
-      
-  build-deploy-proxy-lambda:
-    when: << pipeline.parameters.proxy-lambda >> 
-    jobs:
-      - proxy-lambda
 
   deploy-infrastructure-staging:
     when: 
