@@ -175,6 +175,7 @@ workflows:
             - unit-test-lambda
       - tf-deploy-lambda-staging:
           name: deploy proxy-lambda staging
+          lambda_name: proxy-lambda
           requires:
             - tf-init-and-plan-lambda-staging
           filters:
