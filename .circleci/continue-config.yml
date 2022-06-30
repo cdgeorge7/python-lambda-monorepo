@@ -210,28 +210,6 @@ workflows:
               only:
                 - staging
 
-  build-deploy-other-lambda-with-infra:
-    when: 
-      and: 
-        - << pipeline.parameters.other-lambda >>
-        - << pipeline.parameters.infrastructure-staging >>
-    jobs:
-      - build-other-lambda
-      - deploy-other-lambda-staging:
-          requires: 
-            - build-other-lambda
-          filters:
-            branches:
-              only:
-                - staging
-      - infrastructure-staging:
-          requires: 
-            - deploy-other-lambda-staging
-          filters:
-            branches:
-              only:
-                - staging
-
   deploy-infrastructure-staging:
     when: 
       and:
