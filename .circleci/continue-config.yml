@@ -24,6 +24,9 @@ parameters:
   infrastructure-production:
     type: boolean
     default: false
+  deploy-string:
+    type: string
+    default: ""
     
 jobs:
   build-other-lambda:
@@ -35,6 +38,7 @@ jobs:
           name: test lambda
           command: |
             cd lambdas/other-lambda
+            echo << pipeline.parameters.deploy-string >>
             python -m venv venv
             . venv/bin/activate
             pip install -r requirements.txt
