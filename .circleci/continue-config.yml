@@ -24,26 +24,32 @@ parameters:
   infrastructure-production:
     type: boolean
     default: false
-  deploy-string:
-    type: string
-    default: ""
+
+# each lambda needs it's own set of jobs
+# can only use pipeline parameter boolean in the workflow
     
 jobs:
-  build-other-lambda:
+  unit-test-lambda:
+    parameters:
+      lambda_name:
+        type: string
     docker:
       - image: circleci/python:3.9
     steps:
       - checkout
       - run:
-          name: test lambda
+          name: test << parameters.lambda_name >>
           command: |
-            cd lambdas/other-lambda
-            echo << pipeline.parameters.deploy-string >>
+            cd lambdas/<< parameters.lambda_name >>
             python -m venv venv
             . venv/bin/activate
             pip install -r requirements.txt
             python -m unittest
-  deploy-other-lambda-staging:
+
+  tf-init-and-plan-lambda-staging:
+    parameters:
+      lambda_name:
+        type: string
     docker:
       - image: circleci/python:3.9
     steps:
@@ -56,25 +62,42 @@ jobs:
             sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
             sudo apt-get update && sudo apt-get install terraform
       - run:
-          name: terraform init & plan
+          name: terraform init & plan << parameters.lambda_name >>
           command: |
-            cd lambdas/other-lambda/env/staging
+            cd lambdas/<< parameters.lambda_name >>/env/staging
+            export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
+            terraform init -backend-config="access_key=${AWS_ACCESS_KEY_ID}" -backend-config="secret_key=${AWS_SECRET_ACCESS_KEY}"
+            terraform plan -out=tfplan
+
+  tf-deploy-lambda-staging:
+    parameters:
+      lambda_name:
+        type: string
+    docker:
+      - image: circleci/python:3.9
+    steps:
+      - checkout
+      - run:
+          name: install terraform
+          command: |
+            sudo apt-get update && sudo apt-get install -y gnupg software-properties-common curl
+            curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+            sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+            sudo apt-get update && sudo apt-get install terraform
+      - run:
+          name: terraform init & plan << parameters.lambda_name >>
+          command: |
+            cd lambdas/<< parameters.lambda_name >>/env/staging
             export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
             terraform init -backend-config="access_key=${AWS_ACCESS_KEY_ID}" -backend-config="secret_key=${AWS_SECRET_ACCESS_KEY}"
             terraform plan -out=tfplan
       - run:
-          name: terraform apply
+          name: terraform apply << parameters.lambda_name >>
           command: |
             cd lambdas/other-lambda/env/staging
             export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
             terraform apply tfplan
 
-  proxy-lambda: 
-      executor: base
-      steps:
-        - run: 
-            command: |
-              echo "proxy lambda"
   infrastructure-dev:
       docker:
         - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
@@ -113,46 +136,49 @@ jobs:
               echo "infrastructure"
               
 workflows:
-  build-deploy-other-lambda:
-    when: 
-      and: 
+  other-lambda-only:
+    when:
+      and:
         - << pipeline.parameters.other-lambda >>
         - not: << pipeline.parameters.infrastructure-staging >>
     jobs:
-      - build-other-lambda
-      - deploy-other-lambda-staging:
-          requires: 
-            - build-other-lambda
+      - unit-test-lambda:
+          lambda_name: other-lambda
+      - tf-init-and-plan-lambda-staging:
+          lambda_name: other-lambda
+          requires:
+            - unit-test-lambda
+      - tf-deploy-lambda-staging:
+          lambda_name: other-lambda
+          requires:
+            - tf-init-and-plan-lambda-staging
           filters:
             branches:
               only:
                 - staging
-  build-deploy-other-lambda-with-infra:
-    when: 
-      and: 
-        - << pipeline.parameters.other-lambda >>
-        - << pipeline.parameters.infrastructure-staging >>
+  proxy-lambda-only:
+    when:
+      and:
+        - << pipeline.parameters.proxy-lambda >>
+        - not: << pipeline.parameters.infrastructure-staging >>
     jobs:
-      - build-other-lambda
-      - deploy-other-lambda-staging:
-          requires: 
-            - build-other-lambda
+      - unit-test-lambda:
+          name: test proxy-lambda
+          lambda_name: proxy-lambda
+      - tf-init-and-plan-lambda-staging:
+          name: init & plan proxy-lambda
+          lambda_name: proxy-lambda
+          requires:
+            - unit-test-lambda
+      - tf-deploy-lambda-staging:
+          name: deploy proxy-lambda staging
+          lambda_name: proxy-lambda
+          requires:
+            - tf-init-and-plan-lambda-staging
           filters:
             branches:
               only:
                 - staging
-      - infrastructure-staging:
-          requires: 
-            - deploy-other-lambda-staging
-          filters:
-            branches:
-              only:
-                - staging
-      
-  build-deploy-proxy-lambda:
-    when: << pipeline.parameters.proxy-lambda >> 
-    jobs:
-      - proxy-lambda
 
   deploy-infrastructure-staging:
     when: 
