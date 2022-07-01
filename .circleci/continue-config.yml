@@ -40,7 +40,7 @@ jobs:
       - run:
           name: test << parameters.lambda_name >>
           command: |
-            cd lambdas/<< parameters.lambda_name >>
+            cd lambdas/<< parameters.lambda_name >>/code
             python -m venv venv
             . venv/bin/activate
             [ -e requirements.txt ] && pip install -r requirements.txt
