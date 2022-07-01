@@ -1,8 +1,8 @@
-from code.main import handler
 from unittest import TestCase
 from unittest.mock import patch
 
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
+from main import handler
 
 
 class MockResponse:
