@@ -25,7 +25,7 @@ module "use_other_lambda" {
   environment = "-staging"
 }
 
-output "url" {
+output "other_url" {
   value = module.use_other_lambda.url
 }
 
@@ -35,6 +35,6 @@ module "use_proxy_lambda" {
   environment = "-staging"
 }
 
-output "url" {
+output "proxy_url" {
   value = module.use_proxy_lambda.url
 }
