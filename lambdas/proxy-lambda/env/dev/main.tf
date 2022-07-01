@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
     bucket = "terraform-state-example-bucket"
-    key    = "lambda/other-lambda/terraform.tfstate"
+    key    = "lambda/proxy-lambda/terraform.tfstate"
     region = "us-east-1"
 
     dynamodb_table = "terraform-state-example-locks"
@@ -23,8 +23,8 @@ module "lambda" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "3.3.1"
   # insert the 32 required variables here
-  function_name = "other-lambda"
-  description   = "Simple lambda that returns the event"
+  function_name = "proxy-lambda"
+  description   = "Lambda that takes a url proxies a get request"
   handler       = "main.handler"
   runtime       = "python3.9"
   publish       = true

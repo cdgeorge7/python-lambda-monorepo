@@ -20,6 +20,15 @@ module "use_other_lambda" {
   source = "../../modules/use_other_lambda"
 }
 
-output "url" {
+output "other_url" {
   value = module.use_other_lambda.url
+}
+
+
+module "use_proxy_lambda" {
+  source = "../../modules/use_proxy_lambda"
+}
+
+output "proxy_url" {
+  value = module.use_proxy_lambda.url
 }
