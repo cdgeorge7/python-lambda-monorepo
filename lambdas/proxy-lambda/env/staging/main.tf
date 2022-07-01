@@ -36,7 +36,7 @@ module "lambda" {
   source_path = "../../code"
 
   store_on_s3 = true
-  s3_bucket   = "lambda-source-bucket-lskjadf"
+  s3_bucket   = "lambda-source-bucket${var.environment}-lskjadf"
 }
 
 output "s3_object" {
