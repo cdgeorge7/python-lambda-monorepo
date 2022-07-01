@@ -28,5 +28,4 @@ class TestHandler(TestCase):
         )
         response = handler(event, None)
         self.assertEqual(response["statusCode"], 200)
-        self.assertEqual(response["body"], "Hello World")
-        self.assertEqual(response["headers"], {})
+        self.assertEqual(response["body"], {"headers": {}, "body": "Hello World"})
