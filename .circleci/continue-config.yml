@@ -43,7 +43,7 @@ jobs:
             cd lambdas/<< parameters.lambda_name >>
             python -m venv venv
             . venv/bin/activate
-            pip install -r requirements.txt
+            [ -e requirements.txt ] && pip install -r requirements.txt
             python -m unittest
 
   tf-init-and-plan-lambda-staging:
