@@ -1,5 +1,4 @@
 variable "environment" {
-  #default = "-staging"
   default = ""
 }
 
