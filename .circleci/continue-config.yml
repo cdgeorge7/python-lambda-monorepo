@@ -163,15 +163,12 @@ workflows:
         - not: << pipeline.parameters.infrastructure-staging >>
     jobs:
       - unit-test-lambda:
-          name: test proxy-lambda
           lambda_name: proxy-lambda
       - tf-init-and-plan-lambda-staging:
-          name: init & plan proxy-lambda
           lambda_name: proxy-lambda
           requires:
             - unit-test-lambda
       - tf-deploy-lambda-staging:
-          name: deploy proxy-lambda staging
           lambda_name: proxy-lambda
           requires:
             - tf-init-and-plan-lambda-staging
