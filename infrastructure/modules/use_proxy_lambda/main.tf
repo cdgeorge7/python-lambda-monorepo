@@ -4,18 +4,18 @@ variable "environment" {
 }
 
 
-data "terraform_remote_state" "lambda_other_lambda_source" {
+data "terraform_remote_state" "lambda_proxy_lambda_source" {
   backend = "s3"
 
   config = {
     bucket = "terraform-state-example-bucket${var.environment}"
-    key    = "lambda/other-lambda/terraform.tfstate"
+    key    = "lambda/proxy-lambda/terraform.tfstate"
     region = "us-east-1"
   }
 }
 
 resource "aws_lambda_function_url" "this" {
-  function_name      = data.terraform_remote_state.lambda_other_lambda_source.outputs.lambda_function_name
+  function_name      = data.terraform_remote_state.lambda_proxy_lambda_source.outputs.lambda_function_name
   authorization_type = "NONE"
 
   cors {
