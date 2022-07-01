@@ -1,5 +1,6 @@
-from code.main import handler
 from unittest import TestCase
+
+from main import handler
 
 
 class TestOtherLambda(TestCase):
