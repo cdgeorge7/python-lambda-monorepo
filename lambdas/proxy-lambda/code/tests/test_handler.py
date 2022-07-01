@@ -13,7 +13,7 @@ class MockResponse:
 
 
 class TestHandler(TestCase):
-    @patch("code.main.Proxy.get")
+    @patch("main.Proxy.get")
     def test_it_returns_proper_response(self, mock_proxy_get):
         mock_proxy_get.return_value = MockResponse(200, {}, "Hello World")
         event = APIGatewayProxyEventV2(
