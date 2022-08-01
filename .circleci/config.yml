@@ -12,7 +12,7 @@ workflows:
           base-revision: staging
           config-path: .circleci/continue-config.yml
           mapping: |
-            service1/.* service1-dev true
+            service1/.* service1 true
           filters:
             branches:
               ignore:
