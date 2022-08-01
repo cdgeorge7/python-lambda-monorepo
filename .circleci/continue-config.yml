@@ -136,7 +136,7 @@ jobs:
               echo "infrastructure"
               
 workflows:
-  service1-staging:
+  service1:
     when: << pipeline.parameters.service1 >>
     jobs:
       - unit-test-lambda:
@@ -161,7 +161,27 @@ workflows:
             - other-lambda-tf-init-and-plan-lambda-staging
           filters:
             branches:
-              ignore:
+              only:
+                - staging
+      - tf-init-and-plan-lambda-prod:
+          name: other-lambda-tf-init-and-plan-lambda-prod
+          service_name: service1
+          lambda_name: other-lambda
+          requires:
+            - other-lambda-unit-test-lambda
+          filters:
+            branches:
+              only:
+                - main
+      - tf-deploy-lambda-prod:
+          name: other-lambda-tf-deploy-lambda-prod
+          service_name: service1
+          lambda_name: other-lambda
+          requires:
+            - other-lambda-tf-init-and-plan-lambda-prod
+          filters:
+            branches:
+              only:
                 - main
       - unit-test-lambda:
           name: proxy-lambda-unit-test-lambda
@@ -185,7 +205,27 @@ workflows:
             - proxy-lambda-tf-init-and-plan-lambda-staging
           filters:
             branches:
-              ignore:
+              only:
+                - staging
+      - tf-init-and-plan-lambda-prod:
+          name: proxy-lambda-tf-init-and-plan-lambda-prod
+          service_name: service1
+          lambda_name: proxy-lambda
+          requires:
+            - proxy-lambda-unit-test-lambda
+          filters:
+            branches:
+              only:
+                - main
+      - tf-deploy-lambda-prod:
+          name: proxy-lambda-tf-deploy-lambda-prod
+          service_name: service1
+          lambda_name: proxy-lambda
+          requires:
+            - proxy-lambda-tf-init-and-plan-lambda-prod
+          filters:
+            branches:
+              only:
                 - main
       - infrastructure-staging:
           name: infrastructure-staging
@@ -195,7 +235,17 @@ workflows:
             - proxy-lambda-tf-deploy-lambda-staging
           filters:
             branches:
-              ignore:
+              only:
+                - staging
+      - infrastructure-prod:
+          name: infrastructure-prod
+          service_name: service1
+          requires:
+            - other-lambda-tf-deploy-lambda-prod
+            - proxy-lambda-tf-deploy-lambda-prod
+          filters:
+            branches:
+              only:
                 - main
 
 
