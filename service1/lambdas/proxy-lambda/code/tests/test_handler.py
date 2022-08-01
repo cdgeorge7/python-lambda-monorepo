@@ -1,8 +1,8 @@
-from code.main import handler
 from unittest import TestCase
 from unittest.mock import patch
 
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
+from main import handler
 
 
 class MockResponse:
@@ -13,7 +13,7 @@ class MockResponse:
 
 
 class TestHandler(TestCase):
-    @patch("code.main.Proxy.get")
+    @patch("main.Proxy.get")
     def test_it_returns_proper_response(self, mock_proxy_get):
         mock_proxy_get.return_value = MockResponse(200, {}, "Hello World")
         event = APIGatewayProxyEventV2(
@@ -28,5 +28,4 @@ class TestHandler(TestCase):
         )
         response = handler(event, None)
         self.assertEqual(response["statusCode"], 200)
-        self.assertEqual(response["body"], "Hello World")
-        self.assertEqual(response["headers"], {})
+        self.assertEqual(response["body"], {"headers": {}, "body": "Hello World"})

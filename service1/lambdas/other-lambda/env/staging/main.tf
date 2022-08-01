@@ -1,14 +1,29 @@
 terraform {
   backend "s3" {
-    bucket = "terraform-state-example-bucket"
+    bucket = "terraform-state-example-bucket-staging"
     key    = "lambda/other-lambda/terraform.tfstate"
     region = "us-east-1"
 
     dynamodb_table = "terraform-state-example-locks"
     encrypt        = true
   }
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "4.20.1"
+    }
+  }
 }
 
+provider "aws" {
+  region = "us-east-1"
+}
+
+variable "environment" {
+  default = "-staging"
+}
+
+# trigger deploy...dumb
 module "lambda" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "3.3.1"
@@ -19,10 +34,10 @@ module "lambda" {
   runtime       = "python3.9"
   publish       = true
 
-  source_path = "./code"
+  source_path = "../../code"
 
   store_on_s3 = true
-  s3_bucket   = "lambda-source-bucket-lskjadf"
+  s3_bucket   = "lambda-source-bucket${var.environment}-lskjadf"
 }
 
 output "s3_object" {

@@ -1,0 +1,28 @@
+version: 2.1
+
+setup: true
+
+orbs:
+  path-filtering: circleci/path-filtering@0.0.2
+
+workflows:
+  setup-workflow:
+    jobs:
+      - path-filtering/filter:
+          base-revision: staging
+          config-path: .circleci/continue-config.yml
+          mapping: |
+            service1/.* service1 true
+          filters:
+            branches:
+              ignore:
+                - main
+      - path-filtering/filter:
+          base-revision: main
+          config-path: .circleci/continue-config.yml
+          mapping: |
+            service1/.* service1 true
+          filters:
+            branches:
+              only:
+                - main

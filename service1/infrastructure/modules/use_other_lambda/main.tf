@@ -1,9 +1,13 @@
+variable "environment" {
+  default = ""
+}
+
 
 data "terraform_remote_state" "lambda_other_lambda_source" {
   backend = "s3"
 
   config = {
-    bucket = "terraform-state-example-bucket"
+    bucket = "terraform-state-example-bucket${var.environment}"
     key    = "lambda/other-lambda/terraform.tfstate"
     region = "us-east-1"
   }

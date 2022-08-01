@@ -5,12 +5,12 @@ from aws_lambda_powertools.utilities.data_classes import (
     APIGatewayProxyEventV2,
     event_source,
 )
-
 from pythonlambdautils import Proxy
 
 
 @event_source(data_class=APIGatewayProxyEventV2)
 def handler(event: APIGatewayProxyEventV2, context=None) -> dict:
+    print(event)
     if event.http_method != "POST":
         return {"statusCode": 405, "body": "method not allowed"}
     if "url" not in event.json_body:
@@ -25,6 +25,8 @@ def handler(event: APIGatewayProxyEventV2, context=None) -> dict:
 
     return {
         "statusCode": response.status_code,
-        "headers": response.headers,
-        "body": response.text,
+        "body": {
+            "headers": dict(response.headers),
+            "body": response.text,
+        },
     }
