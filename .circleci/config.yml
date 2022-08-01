@@ -12,8 +12,17 @@ workflows:
           base-revision: staging
           config-path: .circleci/continue-config.yml
           mapping: |
-            lambdas/other-lambda/.* other-lambda true
-            lambdas/proxy-lambda/.* proxy-lambda true
-            infrastructure/env/dev/.* infrastructure-dev true
-            infrastructure/env/staging/.* infrastructure-staging true
-            infrastructure/env/production/.* infrastructure-production true
+            service1/.* service1 true
+          filters:
+            branches:
+              ignore:
+                - main
+      - path-filtering/filter:
+          base-revision: main
+          config-path: .circleci/continue-config.yml
+          mapping: |
+            service1/.* service1 true
+          filters:
+            branches:
+              only:
+                - main

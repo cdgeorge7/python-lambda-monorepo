@@ -9,6 +9,9 @@ executors:
       - image: cimg/base:stable
 
 parameters:
+  service1:
+    type: boolean
+    default: false
   other-lambda:
     type: boolean
     default: false
@@ -31,6 +34,8 @@ parameters:
 jobs:
   unit-test-lambda:
     parameters:
+      service_name:
+        type: string
       lambda_name:
         type: string
     docker:
@@ -40,7 +45,7 @@ jobs:
       - run:
           name: test << parameters.lambda_name >>
           command: |
-            cd lambdas/<< parameters.lambda_name >>/code
+            cd << parameters.service_name >>/lambdas/<< parameters.lambda_name >>/code
             python -m venv venv
             . venv/bin/activate
             [ -e requirements.txt ] && pip install -r requirements.txt
@@ -48,6 +53,8 @@ jobs:
 
   tf-init-and-plan-lambda-staging:
     parameters:
+      service_name:
+        type: string
       lambda_name:
         type: string
     docker:
@@ -64,13 +71,15 @@ jobs:
       - run:
           name: terraform init & plan << parameters.lambda_name >>
           command: |
-            cd lambdas/<< parameters.lambda_name >>/env/staging
+            cd << parameters.service_name >>/lambdas/<< parameters.lambda_name >>/env/staging
             export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
             terraform init -backend-config="access_key=${AWS_ACCESS_KEY_ID}" -backend-config="secret_key=${AWS_SECRET_ACCESS_KEY}"
             terraform plan -out=tfplan
 
   tf-deploy-lambda-staging:
     parameters:
+      service_name:
+        type: string
       lambda_name:
         type: string
     docker:
@@ -87,110 +96,231 @@ jobs:
       - run:
           name: terraform init & plan << parameters.lambda_name >>
           command: |
-            cd lambdas/<< parameters.lambda_name >>/env/staging
+            cd << parameters.service_name >>/lambdas/<< parameters.lambda_name >>/env/staging
             export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
             terraform init -backend-config="access_key=${AWS_ACCESS_KEY_ID}" -backend-config="secret_key=${AWS_SECRET_ACCESS_KEY}"
             terraform plan -out=tfplan
       - run:
           name: terraform apply << parameters.lambda_name >>
           command: |
-            cd lambdas/<< parameters.lambda_name >>/env/staging
+            cd << parameters.service_name >>/lambdas/<< parameters.lambda_name >>/env/staging
             export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
             terraform apply tfplan
 
   infrastructure-staging:
-      docker:
-        - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
-      steps:
-        - checkout
-        - run:
-            name: terraform init & plan
-            command: |
-              cd infrastructure/env/staging
-              export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
-              terraform init -backend-config="access_key=${AWS_ACCESS_KEY_ID}" -backend-config="secret_key=${AWS_SECRET_ACCESS_KEY}"
-              terraform plan -out=tfplan
-        - run:
-            name: terraform apply
-            command: |
-              cd infrastructure/env/staging
-              export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
-              terraform apply tfplan
-  infrastructure-production:
-      executor: base
-      steps:
-        - run: 
-            command: |
-              echo "infrastructure"
+    parameters:
+      service_name:
+        type: string
+    docker:
+      - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
+    steps:
+      - checkout
+      - run:
+          name: terraform init & plan
+          command: |
+            cd << parameters.service_name >>/infrastructure/env/staging
+            export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
+            terraform init -backend-config="access_key=${AWS_ACCESS_KEY_ID}" -backend-config="secret_key=${AWS_SECRET_ACCESS_KEY}"
+            terraform plan -out=tfplan
+      - run:
+          name: terraform apply
+          command: |
+            cd << parameters.service_name >>/infrastructure/env/staging
+            export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
+            terraform apply tfplan
+  infrastructure-prod:
+    parameters:
+      service_name:
+        type: string
+    executor: base
+    steps:
+      - run: 
+          command: |
+            echo "infrastructure << parameters.service_name >>"
               
 workflows:
-  other-lambda:
-    when: << pipeline.parameters.other-lambda >>
+  service1:
+    when: << pipeline.parameters.service1 >>
     jobs:
       - unit-test-lambda:
+          name: other-lambda-unit-test-lambda
+          service_name: service1
           lambda_name: other-lambda
       - tf-init-and-plan-lambda-staging:
+          name: other-lambda-tf-init-and-plan-lambda-staging
+          service_name: service1
           lambda_name: other-lambda
           requires:
-            - unit-test-lambda
+            - other-lambda-unit-test-lambda
+          filters:
+            branches:
+              ignore:
+                - main
       - tf-deploy-lambda-staging:
+          name: other-lambda-tf-deploy-lambda-staging
+          service_name: service1
           lambda_name: other-lambda
           requires:
-            - tf-init-and-plan-lambda-staging
+            - other-lambda-tf-init-and-plan-lambda-staging
           filters:
             branches:
               only:
                 - staging
-      - infrastructure-staging:
-          requires:
-            - tf-deploy-lambda-staging
-          filters:
-            branches:
-              only:
-                - staging
-  proxy-lambda:
-    when: << pipeline.parameters.proxy-lambda >>
-    jobs:
-      - unit-test-lambda:
-          lambda_name: proxy-lambda
       - tf-init-and-plan-lambda-staging:
-          lambda_name: proxy-lambda
+          name: other-lambda-tf-init-and-plan-lambda-prod
+          service_name: service1
+          lambda_name: other-lambda
           requires:
-            - unit-test-lambda
-      - tf-deploy-lambda-staging:
-          lambda_name: proxy-lambda
-          requires:
-            - tf-init-and-plan-lambda-staging
-          filters:
-            branches:
-              only:
-                - staging
-      - infrastructure-staging:
-          requires:
-            - tf-deploy-lambda-staging
-          filters:
-            branches:
-              only:
-                - staging
-
-  deploy-infrastructure-staging:
-    when: 
-      and:
-        - << pipeline.parameters.infrastructure-staging >>
-        - not: << pipeline.parameters.other-lambda >>
-        - not: << pipeline.parameters.proxy-lambda >>
-    jobs:
-      - infrastructure-staging:
-          filters:
-            branches:
-              only:
-                - staging
-
-  deploy-infrastructure-production:
-    when: << pipeline.parameters.infrastructure-production >>
-    jobs:
-      - infrastructure-production:
+            - other-lambda-unit-test-lambda
           filters:
             branches:
               only:
                 - main
+      - tf-deploy-lambda-staging:
+          name: other-lambda-tf-deploy-lambda-prod
+          service_name: service1
+          lambda_name: other-lambda
+          requires:
+            - other-lambda-tf-init-and-plan-lambda-prod
+          filters:
+            branches:
+              only:
+                - main
+      - unit-test-lambda:
+          name: proxy-lambda-unit-test-lambda
+          service_name: service1
+          lambda_name: proxy-lambda
+      - tf-init-and-plan-lambda-staging:
+          name: proxy-lambda-tf-init-and-plan-lambda-staging
+          service_name: service1
+          lambda_name: proxy-lambda
+          requires:
+            - proxy-lambda-unit-test-lambda
+          filters:
+            branches:
+              ignore:
+                - main
+      - tf-deploy-lambda-staging:
+          name: proxy-lambda-tf-deploy-lambda-staging
+          service_name: service1
+          lambda_name: proxy-lambda
+          requires:
+            - proxy-lambda-tf-init-and-plan-lambda-staging
+          filters:
+            branches:
+              only:
+                - staging
+      - tf-init-and-plan-lambda-staging:
+          name: proxy-lambda-tf-init-and-plan-lambda-prod
+          service_name: service1
+          lambda_name: proxy-lambda
+          requires:
+            - proxy-lambda-unit-test-lambda
+          filters:
+            branches:
+              only:
+                - main
+      - tf-deploy-lambda-staging:
+          name: proxy-lambda-tf-deploy-lambda-prod
+          service_name: service1
+          lambda_name: proxy-lambda
+          requires:
+            - proxy-lambda-tf-init-and-plan-lambda-prod
+          filters:
+            branches:
+              only:
+                - main
+      - infrastructure-staging:
+          name: infrastructure-staging
+          service_name: service1
+          requires:
+            - other-lambda-tf-deploy-lambda-staging
+            - proxy-lambda-tf-deploy-lambda-staging
+          filters:
+            branches:
+              only:
+                - staging
+      - infrastructure-prod:
+          name: infrastructure-prod
+          service_name: service1
+          requires:
+            - other-lambda-tf-deploy-lambda-prod
+            - proxy-lambda-tf-deploy-lambda-prod
+          filters:
+            branches:
+              only:
+                - main
+
+
+
+
+  # other-lambda:
+  #   when: << pipeline.parameters.other-lambda >>
+  #   jobs:
+  #     - unit-test-lambda:
+  #         lambda_name: other-lambda
+  #     - tf-init-and-plan-lambda-staging:
+  #         lambda_name: other-lambda
+  #         requires:
+  #           - unit-test-lambda
+  #     - tf-deploy-lambda-staging:
+  #         lambda_name: other-lambda
+  #         requires:
+  #           - tf-init-and-plan-lambda-staging
+  #         filters:
+  #           branches:
+  #             only:
+  #               - staging
+  #     - infrastructure-staging:
+  #         requires:
+  #           - tf-deploy-lambda-staging
+  #         filters:
+  #           branches:
+  #             only:
+  #               - staging
+  # proxy-lambda:
+  #   when: << pipeline.parameters.proxy-lambda >>
+  #   jobs:
+  #     - unit-test-lambda:
+  #         lambda_name: proxy-lambda
+  #     - tf-init-and-plan-lambda-staging:
+  #         lambda_name: proxy-lambda
+  #         requires:
+  #           - unit-test-lambda
+  #     - tf-deploy-lambda-staging:
+  #         lambda_name: proxy-lambda
+  #         requires:
+  #           - tf-init-and-plan-lambda-staging
+  #         filters:
+  #           branches:
+  #             only:
+  #               - staging
+  #     - infrastructure-staging:
+  #         requires:
+  #           - tf-deploy-lambda-staging
+  #         filters:
+  #           branches:
+  #             only:
+  #               - staging
+
+  # deploy-infrastructure-staging:
+  #   when: 
+  #     and:
+  #       - << pipeline.parameters.infrastructure-staging >>
+  #       - not: << pipeline.parameters.other-lambda >>
+  #       - not: << pipeline.parameters.proxy-lambda >>
+  #   jobs:
+  #     - infrastructure-staging:
+  #         filters:
+  #           branches:
+  #             only:
+  #               - staging
+
+  # deploy-infrastructure-production:
+  #   when: << pipeline.parameters.infrastructure-production >>
+  #   jobs:
+  #     - infrastructure-production:
+  #         filters:
+  #           branches:
+  #             only:
+  #               - main
