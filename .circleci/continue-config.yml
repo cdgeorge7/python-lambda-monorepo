@@ -163,7 +163,7 @@ workflows:
             branches:
               only:
                 - staging
-      - tf-init-and-plan-lambda-prod:
+      - tf-init-and-plan-lambda-staging:
           name: other-lambda-tf-init-and-plan-lambda-prod
           service_name: service1
           lambda_name: other-lambda
@@ -173,7 +173,7 @@ workflows:
             branches:
               only:
                 - main
-      - tf-deploy-lambda-prod:
+      - tf-deploy-lambda-staging:
           name: other-lambda-tf-deploy-lambda-prod
           service_name: service1
           lambda_name: other-lambda
@@ -207,7 +207,7 @@ workflows:
             branches:
               only:
                 - staging
-      - tf-init-and-plan-lambda-prod:
+      - tf-init-and-plan-lambda-staging:
           name: proxy-lambda-tf-init-and-plan-lambda-prod
           service_name: service1
           lambda_name: proxy-lambda
@@ -217,7 +217,7 @@ workflows:
             branches:
               only:
                 - main
-      - tf-deploy-lambda-prod:
+      - tf-deploy-lambda-staging:
           name: proxy-lambda-tf-deploy-lambda-prod
           service_name: service1
           lambda_name: proxy-lambda
