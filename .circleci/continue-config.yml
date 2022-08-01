@@ -128,7 +128,7 @@ jobs:
             cd << parameters.service_name >>/infrastructure/env/staging
             export AWS_ACCESS_KEY_ID=$STAGING_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$STAGING_SECRET_ACCESS_KEY
             terraform apply tfplan
-  infrastructure-production:
+  infrastructure-prod:
       executor: base
       steps:
         - run: 
