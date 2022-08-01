@@ -137,7 +137,7 @@ jobs:
               
 workflows:
   service1-staging:
-    when: << parameters.service1 >>
+    when: << pipeline.parameters.service1 >>
     jobs:
       - unit-test-lambda:
           name: other-lambda-unit-test-lambda
